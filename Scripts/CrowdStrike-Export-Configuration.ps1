@@ -11,7 +11,7 @@
   https://github.com/CrowdStrike/psfalcon
 
 .INPUTS
-  Users are prompted to select the appropriate CrowdStrike Cloud  
+  Users are prompted to select the appropriate CrowdStrike Cloud
   Users must supply their clientID and secret API keys
 
 .OUTPUTS
@@ -19,13 +19,34 @@
   Exported results to C:\Temp\PSFalcon\FalconConfig_<yyyMMdd>.zip
 
 .NOTES
-  Version:        1.2
+  Version:        1.3
   Script Name:    CrowdStrike-Export-Configuration.ps1
-  Author:         Kevin Elwell - Booz Allen Hamilton
+  Author:         Booz Allen Hamilton
   Creation Date:  4/6/2022
   Purpose/Change: Initial script development
   Credits: Luca Sturlese for the logging functions - https://github.com/9to5IT/PSLogging
 
+  Copyright (c) 2022, Booz Allen Hamilton
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+  1. Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+  2. Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+  IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+  PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #>
 
 
@@ -41,7 +62,7 @@ $sLogName = "PSFalcon-Export-Configuration.log"
 $sLogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
 
 #Script Version
-$ScriptVersion = "1.2"
+$ScriptVersion = "1.3"
 
 #endregion Variables
 
@@ -49,7 +70,7 @@ $ScriptVersion = "1.2"
 
 #region functions
 
-Function Log-Start{
+Function Start-Log{
   <#
   .SYNOPSIS
     Creates log file
@@ -63,7 +84,7 @@ Function Log-Start{
 
   .PARAMETER LogName
     Mandatory. Name of log file to be created. Example: Test_Script.log
-      
+
   .PARAMETER ScriptVersion
     Mandatory. Version of the running script which will be written in the log. Example: 1.5
 
@@ -87,23 +108,23 @@ Function Log-Start{
   .EXAMPLE
     Log-Start -LogPath "C:\Windows\Temp" -LogName "Test_Script.log" -ScriptVersion "1.5"
   #>
-    
-  [CmdletBinding()]
-  
+
+     [CmdletBinding(SupportsShouldProcess)]
+
   Param ([Parameter(Mandatory=$true)][string]$LogPath, [Parameter(Mandatory=$true)][string]$LogName, [Parameter(Mandatory=$true)][string]$ScriptVersion)
-  
+
   Process{
     $sFullPath = $LogPath + "\" + $LogName
-      
+
     #Create file and start logging
     New-Item -Path $LogPath -Value $LogName -ItemType File -Force -ErrorAction SilentlyContinue
-    
+
     Add-Content -Path $sFullPath -Value "***************************************************************************************************"
     Add-Content -Path $sFullPath -Value "Started processing at [$([DateTime]::Now)]."
     Add-Content -Path $sFullPath -Value "Running script version [$ScriptVersion]."
     Add-Content -Path $sFullPath -Value "***************************************************************************************************"
     Add-Content -Path $sFullPath -Value ""
-  
+
     #Write to screen for debug mode
     Write-Debug "***************************************************************************************************"
     Write-Debug "Started processing at [$([DateTime]::Now)]."
@@ -116,20 +137,20 @@ Function Log-Start{
   }
 }
 
-Function Log-Write{
+Function Write-Log{
   <#
   .SYNOPSIS
     Writes to a log file
 
   .DESCRIPTION
     Appends a new line to the end of the specified log file
-  
+
   .PARAMETER LogPath
     Mandatory. Full path of the log file you want to write to. Example: C:\Windows\Temp\Test_Script.log
-  
+
   .PARAMETER LineValue
     Mandatory. The string that you want to write to the log
-      
+
   .INPUTS
     Parameters above
 
@@ -141,7 +162,7 @@ Function Log-Write{
     Author:         Luca Sturlese
     Creation Date:  10/05/12
     Purpose/Change: Initial function development
-  
+
     Version:        1.1
     Author:         Luca Sturlese
     Creation Date:  19/05/12
@@ -150,33 +171,33 @@ Function Log-Write{
   .EXAMPLE
     Log-Write -LogPath "C:\Windows\Temp\Test_Script.log" -LineValue "This is a new line which I am appending to the end of the log file."
   #>
-  
-  [CmdletBinding()]
-  
+
+  [CmdletBinding(SupportsShouldProcess)]
+
   Param ([Parameter(Mandatory=$true)][string]$LogPath, [Parameter(Mandatory=$true)][string]$LineValue)
-  
+
   Process{
     Add-Content -Path $LogPath -Value $LineValue
-  
+
     #Write to screen for debug mode
     Write-Debug $LineValue
   }
 }
 
-Function Log-Error{
+Function Write-ErrorLog{
   <#
   .SYNOPSIS
     Writes an error to a log file
 
   .DESCRIPTION
     Writes the passed error to a new line at the end of the specified log file
-  
+
   .PARAMETER LogPath
     Mandatory. Full path of the log file you want to write to. Example: C:\Windows\Temp\Test_Script.log
-  
+
   .PARAMETER ErrorDesc
     Mandatory. The description of the error you want to pass (use $_.Exception)
-  
+
   .PARAMETER ExitGracefully
     Mandatory. Boolean. If set to True, runs Log-Finish and then exits script
 
@@ -191,7 +212,7 @@ Function Log-Error{
     Author:         Luca Sturlese
     Creation Date:  10/05/12
     Purpose/Change: Initial function development
-    
+
     Version:        1.1
     Author:         Luca Sturlese
     Creation Date:  19/05/12
@@ -200,17 +221,17 @@ Function Log-Error{
   .EXAMPLE
     Log-Error -LogPath "C:\Windows\Temp\Test_Script.log" -ErrorDesc $_.Exception -ExitGracefully $True
   #>
-  
-  [CmdletBinding()]
-  
+
+  [CmdletBinding(SupportsShouldProcess)]
+
   Param ([Parameter(Mandatory=$true)][string]$LogPath, [Parameter(Mandatory=$true)][string]$ErrorDesc, [Parameter(Mandatory=$true)][boolean]$ExitGracefully)
-  
+
   Process{
     Add-Content -Path $LogPath -Value "Error: An error has occurred [$ErrorDesc]."
-  
+
     #Write to screen for debug mode
     Write-Debug "Error: An error has occurred [$ErrorDesc]."
-    
+
     #If $ExitGracefully = True then run Log-Finish and exit script
     If ($ExitGracefully -eq $True){
       Log-Finish -LogPath $LogPath
@@ -219,20 +240,20 @@ Function Log-Error{
   }
 }
 
-Function Log-Finish{
+Function Close-Log{
   <#
   .SYNOPSIS
     Write closing logging data & exit
 
   .DESCRIPTION
     Writes finishing logging data to specified log and then exits the calling script
-  
+
   .PARAMETER LogPath
     Mandatory. Full path of the log file you want to write finishing data to. Example: C:\Windows\Temp\Test_Script.log
 
   .PARAMETER NoExit
     Optional. If this is set to True, then the function will not exit the calling script, so that further execution can occur
-  
+
   .INPUTS
     Parameters above
 
@@ -244,12 +265,12 @@ Function Log-Finish{
     Author:         Luca Sturlese
     Creation Date:  10/05/12
     Purpose/Change: Initial function development
-    
+
     Version:        1.1
     Author:         Luca Sturlese
     Creation Date:  19/05/12
     Purpose/Change: Added debug mode support
-  
+
     Version:        1.2
     Author:         Luca Sturlese
     Creation Date:  01/08/12
@@ -261,53 +282,57 @@ Function Log-Finish{
 .EXAMPLE
     Log-Finish -LogPath "C:\Windows\Temp\Test_Script.log" -NoExit $True
   #>
-  
-  [CmdletBinding()]
-  
+
+  [CmdletBinding(SupportsShouldProcess)]
+
   Param ([Parameter(Mandatory=$true)][string]$LogPath, [Parameter(Mandatory=$false)][string]$NoExit)
-  
+
   Process{
     Add-Content -Path $LogPath -Value ""
     Add-Content -Path $LogPath -Value "***************************************************************************************************"
     Add-Content -Path $LogPath -Value "Finished processing at [$([DateTime]::Now)]."
     Add-Content -Path $LogPath -Value "***************************************************************************************************`n"
-  
+
     #Write to screen for debug mode
     Write-Debug ""
     Write-Debug "***************************************************************************************************"
     Write-Debug "Finished processing at [$([DateTime]::Now)]."
     Write-Debug "***************************************************************************************************"
-  
+
     #Exit calling script if NoExit has not been specified or is set to False
     If(!($NoExit) -or ($NoExit -eq $False)){
       Exit
-    }    
+    }
   }
 }
 
-Function CreateLogDir {
+Function New-LogDir{
+
+  [CmdletBinding(SupportsShouldProcess)]
+
+  Param ()
 
     If(!(Test-Path -Path $sLogPath)) {
-            
+
         # Create C:\Temp\PSFalcon directory
         New-Item -Path $sLogPath -ItemType Directory
 
         # Start logging
-        Log-Start -LogPath $sLogPath -LogName $sLogName -ScriptVersion $ScriptVersion
+        Start-Log -LogPath $sLogPath -LogName $sLogName -ScriptVersion $ScriptVersion
 
         # Log that we are created the C:\Temp\PSFalcon directory
-        Log-Write -LogPath $sLogFile -LineValue "Created $sLogPath directory"
+        Write-Log -LogPath $sLogFile -LineValue "Created $sLogPath directory"
 
     }else{
 
         # Start logging
-        Log-Start -LogPath $sLogPath -LogName $sLogName -ScriptVersion $ScriptVersion
+        Start-Log -LogPath $sLogPath -LogName $sLogName -ScriptVersion $ScriptVersion
 
     }
 
 }
 
-Function CS-Cloud {
+Function Select-CSCloud {
 Clear-Host
 
     do {
@@ -344,20 +369,20 @@ Clear-Host
                 'Q'{
                     Write-Host "`nExiting menu. Please note you MUST select one of the CrowdStrike Cloud environments." -ForegroundColor Red
                     $cloud = "quit"
-                    
+
             }
     }
 
     If($cloud -ne "quit") {
         # Log that the CrowdStrike Cloud the user choose
-        Log-Write -LogPath $sLogFile -LineValue "User choose the CrowdStrike $cloud Cloud."
+        Write-Log -LogPath $sLogFile -LineValue "User choose the CrowdStrike $cloud Cloud."
         Return $cloud
-    
+
     }
 
     If($cloud -eq "quit") {
         # Log that the user choose to quit
-        Log-Write -LogPath $sLogFile -LineValue "User choose to quit the menu. Execution halting."
+        Write-Log -LogPath $sLogFile -LineValue "User choose to quit the menu. Execution halting."
         Log-Finish -LogPath $sLogFile
         Break
     }
@@ -367,10 +392,10 @@ Clear-Host
 #endregion functions
 
 # Create the log directory if it does not already exist
-CreateLogDir
+New-LogDir
 
 # Prompt the user for the CrowdStrike Cloud environment
-$cloudenv = CS-Cloud
+$cloudenv = Select-CSCloud
 
 # Prompt for the API clientid and secret
 $clientid = Read-Host -Prompt 'INPUT YOUR CLIENT ID API KEY'
@@ -379,26 +404,26 @@ $secret = Read-Host -Prompt 'INPUT YOUR API SECRET'
 # Force TLS 1.2
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
 
-# Request an oAUTH2 token
-$token = Request-FalconToken -ClientId $clientid -ClientSecret $secret -Cloud $cloudenv -ErrorAction SilentlyContinue
+# Request an oAUTH2 token and Validate its received
+try {
 
-    #Validate if the token was received
-    if ((Test-FalconToken -ErrorAction SilentlyContinue).token -eq $true) {
-            
-        Write-Host "`n`rToken received. Proceeding.`n`r" -ForegroundColor Green
-        # Log that a token was received
-        Log-Write -LogPath $sLogFile -LineValue "Token received successfully."
-	
-    }else{
+Request-FalconToken -ClientId $clientid -ClientSecret $secret -Cloud $cloudenv;
+    If ((Test-FalconToken).Token -eq $true) {
+        Write-Host "`n`rWE RECEIVED A TOKEN. PROCEEDING.`n`r" -ForegroundColor Green;
+            # Log that a token was received
+            Write-Log -LogPath $sLogFile -LineValue "Token received successfully."
+    }
 
-	    Write-Host "`n`rERROR! A token was NOT received!`n`r" -ForegroundColor Red
-        # Log that a token was NOT received
-        Log-Error -LogPath $sLogFile -ErrorDesc "Token was NOT received successfully." -ExitGracefully $True
-	    Break
-    }	
+} catch {
+
+        Write-Host "`n`rERROR! WE DID NOT RECEIVE A TOKEN!`n`r" -ForegroundColor Red;
+            # Log that a token was NOT received
+            Log-Error -LogPath $sLogFile -ErrorDesc "Token was NOT received successfully." -ExitGracefully $True;
+            Break
+}
 
     # Change directory into C:\Temp\PSFalcon
-    cd $sLogPath
+    Set-Location -Path $sLogPath
 
     # Get todays date into the yyyyMMdd format
     $date = $(Get-Date -Format "yyyyMMdd")
@@ -406,8 +431,8 @@ $token = Request-FalconToken -ClientId $clientid -ClientSecret $secret -Cloud $c
     # Test if the FalconConfig_date.zip file exists
     If(Test-Path -Path $sLogPath\FalconConfig_$date.zip -PathType Leaf) {
 
-        Write-Host "The file $sLogPath\FalconConfig_$date.zip exists." -ForegroundColor Green
-        
+        Write-Host "The file $sLogPath\FalconConfig_$date.zip exists. Deleting file now." -ForegroundColor Green
+
         # Remove the existing file
         Remove-Item -Path $sLogPath\FalconConfig_$date.zip -Force
 }
@@ -417,15 +442,15 @@ $token = Request-FalconToken -ClientId $clientid -ClientSecret $secret -Cloud $c
 
         Write-Host "`n`rThe Falcon configurations were successfully exported.`n`r" -ForegroundColor Green
         # Log that a token was received
-        Log-Write -LogPath $sLogFile -LineValue "The Falcon configurations were successfully exported."
+        Write-Log -LogPath $sLogFile -LineValue "The Falcon configurations were successfully exported."
         # Finalize the log
-        Log-Finish -LogPath $sLogFile
+        Close-Log -LogPath $sLogFile -NoExit $True
 
     }else{
 
     	Write-Host "`n`rERROR! The Falcon configurations were NOT successfully exported!`n`r" -ForegroundColor Red
         # Log that a token was NOT received
-        Log-Error -LogPath $sLogFile -ErrorDesc "The Falcon configurations were NOT successfully exported." -ExitGracefully $True
+        Write-ErrorLog -LogPath $sLogFile -ErrorDesc "The Falcon configurations were NOT successfully exported." -ExitGracefully $True
 	    Break
 
     }
