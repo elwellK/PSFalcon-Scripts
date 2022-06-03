@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 #Requires -Modules PSFalcon
 
 
@@ -19,7 +19,7 @@
   Exported results to C:\Temp\PSFalcon\Falcon-Users-and-Roles.csv
 
 .NOTES
-  Version:        1.9
+  Version:        2.0
   Script Name:    Get All Users and Their Roles.ps1
   Author:         Booz Allen Hamilton
   Creation Date:  4/5/2022
@@ -62,7 +62,7 @@ $sLogName = "PSFalcon-Get-All-Users-with-Roles.log"
 $sLogFile = Join-Path -Path $sLogPath -ChildPath $sLogName
 
 #Script Version
-$ScriptVersion = "1.9"
+$ScriptVersion = "2.0"
 
 #endregion Variables
 
@@ -445,7 +445,7 @@ Request-FalconToken -ClientId $clientid -ClientSecret $secret -Cloud $cloudenv;
 
         Write-Host "`n`rERROR! WE DID NOT RECEIVE A TOKEN!`n`r" -ForegroundColor Red;
             # Log that a token was NOT received
-            Write-ErrorLog -LogPath $sLogFile -ErrorDesc "Token was NOT received successfully." -ExitGracefully $True;
+            Write-ErrorLog -LogPath $sLogFile -ErrorDesc "Token was NOT received successfully." -ExitGracefully $False;
             Break
 }
 
@@ -458,18 +458,21 @@ Get-UserRoles -csvOutDir $sLogPath
     # Log that a token was received
     Write-Log -LogPath $sLogFile -LineValue "Exported Falcon users and roles successfully."
     # Finalize the log
-    Close-Log -LogPath $sLogFile
-    Break
+    Close-Log -LogPath $sLogFile -NoExit $True
+        # Revoke the OAuth2 API token
+        Revoke-FalconToken
+        Break
 
 }catch{
 
     Write-Host "Export of Falcon users and roles was NOT successful." -ForegroundColor Red
     # Log that a token was received
-    Write-ErrorLog -LogPath $sLogFile -ErrorDesc "Export of Falcon users and roles was NOT successful. Exiting." -ExitGracefully $True
-    Break
+    Write-ErrorLog -LogPath $sLogFile -ErrorDesc "Export of Falcon users and roles was NOT successful. Exiting." -ExitGracefully $False
+    # Finalize the log
+    Close-Log -LogPath $sLogFile -NoExit $True
+        # Revoke the OAuth2 API token
+        Revoke-FalconToken
+        Break
 
 }
-
-
-
 
